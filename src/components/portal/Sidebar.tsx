@@ -28,7 +28,7 @@ function getNavItems(role: DemoRole) {
         { label: "Fee Records",  href: "/portal/parent/fees",         icon: DollarSign },
         { label: "Messages",     href: "/portal/parent/messages",     icon: MessageSquare },
         { label: "Announcements",href: "/portal/parent/announcements",icon: Bell },
-        { label: "Report Cards", href: "/portal/parent/reports",      icon: FileText },
+        { label: "Report Cards", href: "/portal/parent/report-cards",  icon: FileText },
       ];
     case "student":
       return [
@@ -55,17 +55,15 @@ function getNavItems(role: DemoRole) {
     case "admin":
       return [
         { label: "Dashboard",    href: "/portal/admin",             icon: LayoutDashboard },
-        { label: "Analytics",    href: "/portal/admin/analytics",   icon: BarChart3 },
-        { label: "Users",        href: "/portal/admin/users",       icon: Users },
-        { label: "Students",     href: "/portal/admin/students",    icon: GraduationCap },
-        { label: "Admissions",   href: "/portal/admin/admissions",  icon: UserCheck },
+        { label: "Analytics",     href: "/portal/admin/analytics",  icon: BarChart3 },
+        { label: "Users",         href: "/portal/admin/users",      icon: Users },
+        { label: "Students",      href: "/portal/admin/students",   icon: GraduationCap },
+        { label: "Staff",         href: "/portal/admin/staff",      icon: Users },
+        { label: "Admissions",    href: "/portal/admin/admissions", icon: UserCheck },
         { label: "Fee Management",href: "/portal/admin/fees",       icon: DollarSign },
-        { label: "Announcements",href: "/portal/admin/announcements",icon: Bell },
-        { label: "Events",       href: "/portal/admin/events",      icon: Calendar },
-        { label: "News",         href: "/portal/admin/news",        icon: Newspaper },
-        { label: "Gallery",      href: "/portal/admin/gallery",     icon: ImageIcon },
-        { label: "Exam Schedule",href: "/portal/admin/exams",       icon: ClipboardList },
-        { label: "Settings",     href: "/portal/admin/settings",    icon: Settings },
+        { label: "Content",       href: "/portal/admin/content",    icon: Newspaper },
+        { label: "Exam Schedule", href: "/portal/admin/exams",      icon: ClipboardList },
+        { label: "Settings",      href: "/portal/admin/settings",   icon: Settings },
       ];
   }
 }
