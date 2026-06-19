@@ -1,119 +1,168 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Users, GraduationCap, BookOpen, Settings, ArrowRight } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import schoolConfig from "../../../school.config";
 
 const roles = [
-  {
-    id: "parent" as const,
-    label: "Parent",
-    emoji: "👨‍👩‍👧",
-    icon: Users,
-    href: "/portal/parent",
-    description: "View your children's grades, attendance records, fee status, and send messages to teachers.",
-    accent: "#1A2B49",
-  },
-  {
-    id: "student" as const,
-    label: "Student",
-    emoji: "👨‍🎓",
-    icon: GraduationCap,
-    href: "/portal/student",
-    description: "Check your timetable, submit assignments, review grades, and stay on top of school events.",
-    accent: "#3D5A45",
-  },
-  {
-    id: "teacher" as const,
-    label: "Teacher",
-    emoji: "👩‍🏫",
-    icon: BookOpen,
-    href: "/portal/teacher",
-    description: "Mark daily attendance, create and grade assignments, upload lesson plans, and message parents.",
-    accent: "#C2593F",
-  },
-  {
-    id: "admin" as const,
-    label: "Admin",
-    emoji: "⚙️",
-    icon: Settings,
-    href: "/portal/admin",
-    description: "Manage users, admissions pipeline, analytics, fee collection, and all school content.",
-    accent: "#6B7280",
-  },
-];
+  { id: "parent",  label: "Parent"  },
+  { id: "student", label: "Student" },
+  { id: "teacher", label: "Teacher" },
+  { id: "admin",   label: "Admin"   },
+] as const;
+
+type Role = (typeof roles)[number]["id"];
+
+const demoEmails: Record<Role, string> = {
+  parent:  "parent@demo.schoolkit.ng",
+  student: "student@demo.schoolkit.ng",
+  teacher: "teacher@demo.schoolkit.ng",
+  admin:   "admin@demo.schoolkit.ng",
+};
+
+const roleRedirects: Record<Role, string> = {
+  parent:  "/portal/parent",
+  student: "/portal/student",
+  teacher: "/portal/teacher",
+  admin:   "/portal/admin",
+};
+
+const DEMO_PASSWORD = "Demo1234!";
 
 export default function LoginForm() {
   const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<Role>("student");
+  const [email, setEmail] = useState(demoEmails.student);
+  const [password, setPassword] = useState(DEMO_PASSWORD);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const enterDemo = (roleId: string, href: string) => {
-    document.cookie = `demo_role=${roleId}; path=/; max-age=86400; SameSite=Lax`;
-    router.push(href);
+  const handleRoleChange = (role: Role) => {
+    setSelectedRole(role);
+    setEmail(demoEmails[role]);
+    setError("");
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email.trim() || password.length < 8) {
+      setError("Please enter a valid email and password");
+      return;
+    }
+
+    setLoading(true);
+    document.cookie = `demo_role=${selectedRole}; path=/; max-age=86400; SameSite=Lax`;
+    router.push(roleRedirects[selectedRole]);
   };
 
   return (
     <div className="min-h-screen bg-[#FBFBFA] flex flex-col items-center justify-center px-4 py-12">
-      {/* Logo */}
-      <Link href="/" className="mb-10 text-center">
-        <h1 className="font-heading text-[26px] font-bold text-[#1A2B49]">{schoolConfig.name}</h1>
-        <p className="text-[13px] text-[#6B7280] mt-0.5">Student &amp; Staff Portal</p>
+      <Link href="/" className="mb-8">
+        <h1 className="font-heading text-[24px] font-bold text-[#1A2B49] text-center">
+          {schoolConfig.name}
+        </h1>
+        <p className="text-[13px] text-[#6B7280] text-center mt-0.5">Student &amp; Staff Portal</p>
       </Link>
 
-      {/* Header */}
-      <div className="w-full max-w-[600px] mb-6 text-center">
-        <div className="inline-block bg-terracotta/10 text-terracotta text-[11px] font-semibold uppercase tracking-widest px-3 py-1 mb-4">
-          Demo Mode
-        </div>
-        <h2 className="font-heading text-[28px] font-bold text-[#1A2B49] mb-2">View Demo As</h2>
-        <p className="text-[15px] text-[#6B7280]">
-          Choose a role to explore the portal. No login required.
-        </p>
-      </div>
+      <div className="w-full max-w-[420px] bg-white border border-[#E5E3DF] shadow-subtle">
+        <div className="p-8">
+          <h2 className="font-heading text-[24px] font-bold text-[#1A2B49] mb-1">Sign In</h2>
+          <p className="text-[14px] text-[#6B7280] mb-6">Access your portal dashboard</p>
 
-      {/* Role cards */}
-      <div className="w-full max-w-[600px] grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {roles.map(({ id, label, emoji, href, description, accent }) => (
-          <button
-            key={id}
-            onClick={() => enterDemo(id, href)}
-            className="group text-left bg-white border border-[#E5E3DF] p-6 hover:border-[#1A2B49] hover:shadow-card transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1A2B49]"
-          >
-            {/* Icon row */}
-            <div
-              className="w-12 h-12 flex items-center justify-center text-[24px] mb-4"
-              style={{ backgroundColor: `${accent}15` }}
-            >
-              <span role="img" aria-label={label}>{emoji}</span>
+          {/* Role tabs */}
+          <div className="flex border border-[#E5E3DF] rounded mb-6">
+            {roles.map((role) => (
+              <button
+                key={role.id}
+                type="button"
+                onClick={() => handleRoleChange(role.id)}
+                className={`flex-1 py-2 text-[13px] font-medium transition-colors first:rounded-l last:rounded-r ${
+                  selectedRole === role.id
+                    ? "bg-[#1A2B49] text-white"
+                    : "text-[#6B7280] hover:text-[#1A2B49] hover:bg-[#F5F4F2]"
+                }`}
+              >
+                {role.label}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label={`${roles.find((r) => r.id === selectedRole)?.label} Email`}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+
+            <div className="relative">
+              <Input
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-8 text-[#6B7280] hover:text-[#1A2B49]"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
 
-            {/* Content */}
-            <h3 className="font-heading text-[18px] font-semibold text-[#1A2B49] mb-1">
-              {label}
-            </h3>
-            <p className="text-[13px] text-[#6B7280] leading-relaxed mb-5">{description}</p>
+            <div className="flex justify-end">
+              <Link
+                href="#"
+                className="text-[13px] text-[#6B7280] hover:text-terracotta transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
 
-            {/* CTA */}
-            <span
-              className="inline-flex items-center gap-1.5 text-[13px] font-semibold group-hover:gap-2.5 transition-all"
-              style={{ color: accent }}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-[13px] px-3 py-2.5 rounded">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              loading={loading}
+              className="w-full"
             >
-              Enter as {label}
-              <ArrowRight size={14} />
-            </span>
-          </button>
-        ))}
+              Sign In to Portal
+            </Button>
+          </form>
+        </div>
+
+        <div className="px-8 py-4 bg-[#F9F8F7] border-t border-[#E5E3DF] text-center">
+          <p className="text-[13px] text-[#6B7280]">
+            Having trouble?{" "}
+            <Link href="/contact" className="text-terracotta hover:underline">
+              Contact the school office
+            </Link>
+          </p>
+        </div>
       </div>
 
-      {/* Footer note */}
-      <div className="mt-8 text-center space-y-2">
-        <p className="text-[12px] text-[#9CA3AF]">
-          All data shown is fictional demo content — no real student information.
-        </p>
-        <Link href="/" className="text-[13px] text-[#6B7280] hover:text-[#1A2B49] transition-colors">
-          ← Back to school website
-        </Link>
-      </div>
+      <Link
+        href="/"
+        className="mt-6 text-[13px] text-[#6B7280] hover:text-[#1A2B49] transition-colors"
+      >
+        ← Back to school website
+      </Link>
     </div>
   );
 }
