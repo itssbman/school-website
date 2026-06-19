@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, Bell, Search, X } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
-import { useSession } from "next-auth/react";
+import { demoUsers } from "@/lib/demo-data";
 
 interface TopBarProps {
   title: string;
@@ -12,8 +13,14 @@ interface TopBarProps {
   unreadCount?: number;
 }
 
+type DemoRole = "parent" | "student" | "teacher" | "admin";
+
 export default function TopBar({ title, onMobileMenuToggle, unreadCount = 0 }: TopBarProps) {
-  const { data: session } = useSession();
+  const pathname = usePathname();
+  const segments = pathname.split("/").filter(Boolean);
+  const role = (segments[1] as DemoRole) || "student";
+  const demoUser = demoUsers[role] ?? demoUsers.student;
+
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
@@ -67,11 +74,7 @@ export default function TopBar({ title, onMobileMenuToggle, unreadCount = 0 }: T
         </Link>
 
         <div className="ml-1">
-          <Avatar
-            src={session?.user?.avatar}
-            name={session?.user?.name || "User"}
-            size="sm"
-          />
+          <Avatar src={undefined} name={demoUser.name} size="sm" />
         </div>
       </div>
     </header>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
 import { Send } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import { format } from "date-fns";
@@ -28,7 +27,6 @@ interface MessagingPanelProps {
 }
 
 export default function MessagingPanel({ height = 500 }: MessagingPanelProps) {
-  const { data: session } = useSession();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [activeThread, setActiveThread] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -126,7 +124,7 @@ export default function MessagingPanel({ height = 500 }: MessagingPanelProps) {
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.map((msg) => {
-                const isMe = msg.senderId === session?.user?.id;
+                const isMe = false;
                 return (
                   <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                     <div
