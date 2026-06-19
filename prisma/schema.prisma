@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  parent
+  student
+  teacher
+  admin
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+enum FeeStatus {
+  paid
+  pending
+  overdue
+}
+
+enum ApplicationStatus {
+  applied
+  shortlisted
+  admitted
+  rejected
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  role          Role      @default(student)
+  avatar        String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  student          Student?
+  parent           Parent?
+  teacher          Teacher?
+  admin            Admin?
+  sentMessages     Message[]     @relation("SentMessages")
+  receivedMessages Message[]     @relation("ReceivedMessages")
+  announcements    Announcement[]
+  newsArticles     NewsArticle[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Student {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  class           String
+  admissionNumber String  @unique
+  parentId        String?
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent      Parent?      @relation(fields: [parentId], references: [id])
+  grades      Grade[]
+  attendance  Attendance[]
+  submissions Submission[]
+  feeRecords  FeeRecord[]
+}
+
+model Parent {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children Student[]
+}
+
+model Teacher {
+  id       String   @id @default(cuid())
+  userId   String   @unique
+  subjects String[]
+  classes  String[]
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  lessonPlans LessonPlan[]
+}
+
+model Admin {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Grade {
+  id        String   @id @default(cuid())
+  studentId String
+  subject   String
+  score     Float
+  term      String
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  studentId String
+  date      DateTime
+  status    AttendanceStatus
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  dueDate     DateTime
+  classId     String
+  teacherId   String
+  fileUrl     String?
+  createdAt   DateTime @default(now())
+
+  teacher     Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+}
+
+model Submission {
+  id           String   @id @default(cuid())
+  assignmentId String
+  studentId    String
+  fileUrl      String
+  submittedAt  DateTime @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+}
+
+model FeeRecord {
+  id        String    @id @default(cuid())
+  studentId String
+  amount    Float
+  status    FeeStatus @default(pending)
+  term      String
+  dueDate   DateTime
+  paidAt    DateTime?
+  reference String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Announcement {
+  id         String   @id @default(cuid())
+  title      String
+  body       String
+  targetRole String
+  createdAt  DateTime @default(now())
+  authorId   String
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  type        String
+  createdAt   DateTime @default(now())
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  body       String
+  createdAt  DateTime @default(now())
+  read       Boolean  @default(false)
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+}
+
+model NewsArticle {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  body        String
+  excerpt     String?
+  imageUrl    String?
+  publishedAt DateTime @default(now())
+  authorId    String
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model GalleryItem {
+  id         String   @id @default(cuid())
+  imageUrl   String
+  caption    String?
+  category   String
+  uploadedAt DateTime @default(now())
+}
+
+model LessonPlan {
+  id         String   @id @default(cuid())
+  teacherId  String
+  subject    String
+  class      String
+  week       String
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+model AdmissionApplication {
+  id        String            @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String
+  class     String
+  status    ApplicationStatus @default(applied)
+  appliedAt DateTime          @default(now())
+  notes     String?
+}
+
+model LibraryBook {
+  id          String  @id @default(cuid())
+  title       String
+  author      String
+  isbn        String?
+  available   Boolean @default(true)
+  category    String
+  description String?
+}
+
+model Timetable {
+  id        String @id @default(cuid())
+  class     String
+  day       String
+  period    Int
+  subject   String
+  teacherId String
+  startTime String
+  endTime   String
+}
