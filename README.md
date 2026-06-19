@@ -1,380 +1,275 @@
-# School Website & Portal
+# SchoolKit
 
-A production-ready, full-stack school website and student/staff portal. White-label ready — adapt it to any school by editing a single configuration file.
+**Premium School Website & Multi-Role Portal System**
 
-## Table of Contents
-
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [White-Label Configuration](#white-label-configuration)
-- [Environment Variables](#environment-variables)
-- [Database Setup](#database-setup)
-- [Running Locally](#running-locally)
-- [Deployment](#deployment)
-- [Architecture](#architecture)
-- [Portal Roles & Access](#portal-roles--access)
-- [Payment Integration](#payment-integration)
-- [File Uploads](#file-uploads)
-- [Email](#email)
-- [Seeding the Database](#seeding-the-database)
+A complete, production-ready school website and portal system built with Next.js 14, TypeScript, Tailwind CSS, and Supabase. White-label ready — deploy for any school by editing a single config file.
 
 ---
 
-## Tech Stack
+## Live Demo
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 (no UI library) |
-| Database | PostgreSQL via Supabase |
-| ORM | Prisma 7 (adapter-pg) |
-| Auth | NextAuth.js v4 — JWT + Credentials |
-| Storage | Supabase Storage |
-| Payments | Paystack (swappable) |
-| Email | Resend |
-| Charts | Recharts |
-| Calendar | FullCalendar.js |
-| Animations | Framer Motion |
-| Fonts | Playfair Display + Inter (Google Fonts) |
+**[school-website-three-beta.vercel.app](https://school-website-three-beta.vercel.app)**
+
+### Demo Credentials
+
+Use these to explore each portal dashboard on the live demo:
+
+| Role    | Email                        | Password  | Dashboard                |
+|---------|------------------------------|-----------|--------------------------|
+| Parent  | parent@demo.schoolkit.ng     | Demo1234! | /portal/parent           |
+| Student | student@demo.schoolkit.ng    | Demo1234! | /portal/student          |
+| Teacher | teacher@demo.schoolkit.ng    | Demo1234! | /portal/teacher          |
+| Admin   | admin@demo.schoolkit.ng      | Demo1234! | /portal/admin            |
+
+> All demo data is fictional. No real school data is used.
+
+---
+
+## What's Included
+
+- **Public website** — Landing page, About, Admissions, News, Gallery, Contact (7 pages)
+- **Parent portal** — Dashboard, Children, Grades, Attendance, Assignments, Fees, Messages, Report Cards, Announcements (9 pages)
+- **Student portal** — Dashboard, Timetable, Assignments, Grades, Library, Resources, Events (7 pages)
+- **Teacher portal** — Dashboard, Classes, Attendance, Grades, Assignments, Lesson Plans, Messages, Announcements (8 pages)
+- **Admin portal** — Dashboard, Students, Staff, Admissions, Fees, Content, Users, Exams (8 pages)
+- **White-label config** — `school.config.ts` controls name, colors, contact, social links
+- **Paystack integration** — Nigerian payment gateway for school fees
+- **Real-time messaging** — Parents and teachers via Supabase Realtime
+- **Analytics dashboards** — Recharts-powered attendance, financial, and performance charts
+- **Database seed** — Realistic demo data pre-loaded with one command
 
 ---
 
 ## Quick Start
 
+### 1. Clone and install dependencies
+
 ```bash
-# 1. Clone and install
-git clone <repo-url> my-school-site
-cd my-school-site
+git clone https://github.com/your-username/school-website.git
+cd school-website
 npm install
+```
 
-# 2. Configure the school (see section below)
-# Edit school.config.ts
+### 2. Configure environment variables
 
-# 3. Set environment variables
+```bash
 cp .env.local.example .env.local
-# Fill in .env.local
+```
 
-# 4. Push the database schema
+Open `.env.local` and fill in your values:
+
+```env
+# NextAuth
+NEXTAUTH_SECRET=your-random-secret        # Run: openssl rand -base64 32
+NEXTAUTH_URL=http://localhost:3000
+
+# Supabase (supabase.com → your project → Settings → API)
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Database (supabase.com → Settings → Database → URI)
+DATABASE_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
+
+# Paystack (dashboard.paystack.com → Settings → API Keys)
+PAYSTACK_SECRET_KEY=sk_test_xxxx
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxxx
+
+# Resend (resend.com → API Keys)
+RESEND_API_KEY=re_xxxx
+
+# School Identity
+NEXT_PUBLIC_SCHOOL_NAME=Your School Name
+NEXT_PUBLIC_SCHOOL_TAGLINE=Your School Tagline
+```
+
+### 3. Push database schema
+
+```bash
 npm run db:push
+```
 
-# 5. Seed with demo data
+### 4. Seed with demo data
+
+```bash
 npm run db:seed
+```
 
-# 6. Start development
+This creates:
+- 1 Admin, 2 Teachers, 1 Parent, 2 Students
+- Sample grades, attendance records, fee records
+- News articles, announcements, events, gallery items
+
+Seeded login credentials match whatever `seed.staffEmailDomain` is set to in `school.config.ts`.
+
+### 5. Run locally
+
+```bash
 npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
 ## White-Label Configuration
 
-**`school.config.ts`** at the project root is the single file you edit to rebrand the entire site. After editing, run `npm run build` (or restart `npm run dev`) to apply all changes.
+Open `school.config.ts` in the project root. This is the only file you need to edit to rebrand the entire site for a client.
 
-```ts
-// school.config.ts (excerpt — edit these values)
+```typescript
 const schoolConfig = {
-  name: "Greenfield Academy",          // School name across all pages
-  tagline: "Nurturing Excellence...",  // Shown in metadata and hero
-  logoPath: "/logo.svg",               // Place your logo in /public/
+  name: "Your School Name",
+  tagline: "Your School Tagline",
 
   brand: {
-    accentColor: "#C2593F",            // Primary brand color (hex)
-    accentColorDark: "#A8452F",        // Darker shade for hover states
-  },
-
-  currency: {
-    symbol: "₦",                       // Displayed in fee panels
-    code: "NGN",                       // Passed to Paystack/Stripe
-    locale: "en-NG",                   // Used in toLocaleString()
+    accentColor: "#C2593F",   // Change to any hex color
+    logoPath: "/logo.png",    // Drop your logo in /public/
   },
 
   contact: {
-    address: { full: "...", mapEmbedUrl: "..." },
+    address: "14 School Road, Victoria Island, Lagos",
     phone: ["+234 801 234 5678"],
-    email: { info: "info@...", admissions: "admissions@..." },
+    email: "info@yourschool.edu.ng",
+    officeHours: "Monday – Friday: 7:30 AM – 5:00 PM",
+    mapEmbedUrl: "your-google-maps-embed-url",
   },
 
-  // ... hero text, timeline milestones, leadership, accreditations, etc.
-  // See school.config.ts for the full structure with inline comments.
-};
+  social: {
+    facebook: "https://facebook.com/yourschool",
+    twitter:  "https://twitter.com/yourschool",
+    instagram: "https://instagram.com/yourschool",
+    youtube:  "https://youtube.com/yourschool",
+  },
+
+  currency: {
+    symbol: "₦",
+    code: "NGN",
+    locale: "en-NG",
+  },
+
+  seed: {
+    staffEmailDomain: "yourschool.edu.ng",
+    adminPassword: "Admin1234!",
+  },
+}
 ```
 
-### What the config controls
-
-| Config key | Where it appears |
-|---|---|
-| `name` | Navbar, footer, portal sidebar, page titles, login, SEO |
-| `tagline` | Browser tab title, SEO description |
-| `logoPath` | Swap the text logo for an `<img>` in Navbar / Sidebar |
-| `brand.accentColor` | Tailwind `terracotta` color, CSS `--accent` var, chart fills |
-| `brand.accentColorDark` | Tailwind `terracotta-dark`, darker hover states |
-| `currency.symbol/code/locale` | Fee display in parent dashboard, admin charts, Paystack init |
-| `contact.*` | Footer, contact page, map embed URL |
-| `social.*` | Footer social icon links |
-| `accreditations` | Hero accreditation strip |
-| `stats.*` | Hero stat card, about page statistics grid |
-| `hero.*` | Landing page headline, description, hero image |
-| `alertBanner.*` | Top announcement bar (fallback when no DB announcements) |
-| `admissions.*` | Admissions CTA section heading and body text |
-| `history.intro` | About page intro paragraph |
-| `history.milestones` | Timeline component data |
-| `leadership` | About page leadership grid |
-| `seed.staffEmailDomain` | Staff/student emails generated by `npm run db:seed` |
-
-### How accent color propagation works
-
-When you change `brand.accentColor`, three mechanisms update simultaneously on the next build:
-
-1. **Tailwind** — `tailwind.config.ts` imports the value and maps it to the `terracotta` color scale. Every utility class (`text-terracotta`, `bg-terracotta`, `border-terracotta`, `terracotta/50`, etc.) updates automatically.
-2. **CSS custom property** — `layout.tsx` injects `<style>:root { --accent: #HEX; }</style>` into the document head, updating `::selection`, scrollbar thumb, drop-cap, and `.nav-link:hover` in `globals.css`.
-3. **JavaScript** — chart `fill` colors and SVG props import `schoolConfig.brand.accentColor` directly and re-render with the new value.
+After editing, rebuild with `npm run build` and the entire site reflects the new branding.
 
 ---
 
-## Environment Variables
+## Deployment (Vercel + Supabase)
 
-Copy `.env.local.example` to `.env.local` and fill in each value:
+### Vercel
 
-```bash
-# ── Database ────────────────────────────────────────────────────────────────
-DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres"
+1. Push your repo to GitHub
+2. Go to [vercel.com](https://vercel.com) → Import your GitHub repo
+3. Add all environment variables from `.env.local` under **Settings → Environment Variables**
+4. Click Deploy
 
-# ── NextAuth ────────────────────────────────────────────────────────────────
-NEXTAUTH_SECRET="generate-with: openssl rand -base64 32"
-NEXTAUTH_URL="http://localhost:3000"    # change to your production domain
+### Custom Domain
 
-# ── Supabase ────────────────────────────────────────────────────────────────
-NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT].supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
-SUPABASE_SERVICE_ROLE_KEY="eyJ..."     # server-only; never expose to the client
-
-# ── Paystack ────────────────────────────────────────────────────────────────
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY="pk_test_..."
-PAYSTACK_SECRET_KEY="sk_test_..."
-
-# ── Resend (email) ──────────────────────────────────────────────────────────
-RESEND_API_KEY="re_..."
-EMAIL_FROM="noreply@yourdomain.com"
-
-# ── Optional overrides (school.config.ts is the preferred approach) ─────────
-NEXT_PUBLIC_SCHOOL_NAME="Greenfield Academy"
-NEXT_PUBLIC_SCHOOL_TAGLINE="Nurturing Excellence, Building Character"
+In Vercel → your project → **Domains**, add your domain and update:
+```env
+NEXTAUTH_URL=https://yourdomain.com
 ```
 
-> `SUPABASE_SERVICE_ROLE_KEY`, `PAYSTACK_SECRET_KEY`, and `RESEND_API_KEY` are server-only secrets. They must not be prefixed with `NEXT_PUBLIC_`.
+### After Deploying
 
----
-
-## Database Setup
-
-This project uses **Prisma 7** with `@prisma/adapter-pg`. Prisma 7 is a breaking change from v5/v6: the `DATABASE_URL` is no longer set in `schema.prisma` — it lives in `prisma.config.ts` via the adapter.
+Run these against your live Supabase database to set up schema and seed data:
 
 ```bash
-# Apply the schema to the database (creates/migrates tables)
-npm run db:push
-
-# Regenerate the Prisma client after schema changes
-npm run db:generate
-
-# Open Prisma Studio (GUI)
-npm run db:studio
-```
-
-### Schema overview
-
-The schema defines 17+ models. Key relationships:
-
-- `User` — base auth record with `Role` enum (`parent | student | teacher | admin`)
-- `Student` → `User` (1:1), `Parent` (optional FK), `Grade[]`, `Attendance[]`, `Submission[]`, `FeeRecord[]`
-- `Parent` → `User` (1:1), `Student[]` (one parent can have multiple children)
-- `Teacher` → `User` (1:1), stores `subjects[]` and `classes[]` as PostgreSQL string arrays
-- `Attendance` — unique constraint on `[studentId, date]`
-- `Submission` — unique constraint on `[assignmentId, studentId]`
-- `FeeRecord` — tracks payment status (`paid | pending | overdue`) with Paystack `reference`
-- `NewsArticle` — `slug` field is unique, used for `/news/[slug]` routing
-
-### Production migrations
-
-`db:push` is used here for rapid development. For production, use tracked migrations:
-
-```bash
-npx prisma migrate dev --name descriptive-name   # create migration file
-npx prisma migrate deploy                         # apply in CI/CD
+npx prisma db push
+npx prisma db seed
 ```
 
 ---
 
-## Running Locally
-
-```bash
-npm run dev        # generates Prisma client, then starts Next.js dev server
-npm run build      # type-check + prisma generate + next build
-npm run start      # serve the production build locally
-npm run lint       # ESLint
-```
-
----
-
-## Deployment
-
-### Vercel (recommended)
-
-1. Push the repository to GitHub / GitLab / Bitbucket.
-2. Import into [Vercel](https://vercel.com/new).
-3. Add all environment variables in **Project Settings → Environment Variables**.
-4. Leave Build Command as `npm run build` and Output Directory as `.next`.
-5. Deploy.
-
-After the first deployment, run the database setup once:
-
-```bash
-# Via Vercel CLI
-vercel env pull .env.local
-npm run db:push
-npm run db:seed
-```
-
-### Self-hosted
-
-```bash
-npm ci
-npm run build
-npm run start      # listens on $PORT (default 3000)
-```
-
-Use Nginx or Caddy as a reverse proxy to terminate TLS and forward to port 3000.
-
----
-
-## Architecture
+## Project Structure
 
 ```
 school-website/
-├── school.config.ts          ← White-label configuration (edit this first)
-├── tailwind.config.ts        ← Imports accentColor from school.config.ts
-├── prisma.config.ts          ← Prisma 7 adapter config (do not modify)
+├── school.config.ts          ← White-label config (start here)
 ├── prisma/
-│   ├── schema.prisma         ← Database schema (17 models, no URL here)
-│   └── seed.ts               ← Demo data seeder (reads school.config.ts)
+│   ├── schema.prisma         ← Database schema (16 tables)
+│   └── seed.ts               ← Demo data seed script
 └── src/
     ├── app/
-    │   ├── layout.tsx        ← Root layout; injects CSS --accent custom property
-    │   ├── globals.css       ← Global styles; uses var(--accent) for non-Tailwind CSS
-    │   ├── page.tsx          ← Public landing page (9 sections)
-    │   ├── about/
-    │   ├── admissions/
-    │   ├── contact/
-    │   ├── gallery/
-    │   ├── news/             ← Listing + [slug] detail
-    │   ├── login/            ← Credentials auth
-    │   ├── portal/
-    │   │   ├── layout.tsx    ← SessionProvider wrapper
-    │   │   ├── parent/       ← Parent dashboard (multi-child, fees, messaging)
-    │   │   ├── student/      ← Student dashboard (timetable, assignments, grades)
-    │   │   ├── teacher/      ← Teacher dashboard (attendance, grade entry)
-    │   │   └── admin/        ← Admin dashboard (KPIs, pipeline, user mgmt)
-    │   └── api/              ← REST endpoints (grades, attendance, fees, ...)
+    │   ├── page.tsx          ← Public landing page
+    │   ├── about/            ← About page
+    │   ├── admissions/       ← Admissions page
+    │   ├── news/             ← News listing + article pages
+    │   ├── gallery/          ← Photo gallery
+    │   ├── contact/          ← Contact page
+    │   ├── login/            ← Role-based login
+    │   └── portal/
+    │       ├── parent/       ← Parent portal (9 pages)
+    │       ├── student/      ← Student portal (7 pages)
+    │       ├── teacher/      ← Teacher portal (8 pages)
+    │       └── admin/        ← Admin portal (8 pages)
     ├── components/
-    │   ├── layout/           ← Navigation, Footer
-    │   ├── landing/          ← HeroSection, Timeline, AlertBanner, etc.
-    │   ├── portal/           ← Sidebar, TopBar, MessagingPanel
-    │   └── ui/               ← Button, Input, Badge, Avatar, Textarea
-    ├── lib/
-    │   ├── auth.ts           ← NextAuth options + Credentials provider
-    │   ├── prisma.ts         ← PrismaClient singleton with PrismaPg adapter
-    │   └── supabase.ts       ← Supabase browser + admin clients
-    └── types/
-        ├── index.ts          ← Local type aliases: Role, FeeStatus, etc.
-        └── next-auth.d.ts    ← Session type augmentation (adds role, avatar)
+    │   ├── portal/           ← Sidebar, TopBar, DemoBanner
+    │   └── ui/               ← Button, Input, Badge, Avatar
+    └── lib/
+        ├── demo-data.ts      ← All mock data for demo mode
+        ├── prisma.ts         ← Prisma client
+        └── supabase.ts       ← Supabase client
 ```
 
 ---
 
-## Portal Roles & Access
+## Tech Stack
 
-| Role | Entry point | Capabilities |
-|---|---|---|
-| `admin` | `/portal/admin` | KPI cards, 30-day attendance trend chart, fee collection chart, admissions pipeline, content management (news/announcements/events), user deactivation |
-| `teacher` | `/portal/teacher` | Attendance marking (present/absent/late per student), grade entry, assignment creation, lesson plan upload |
-| `student` | `/portal/student` | Timetable view, assignment submission via drag-and-drop (react-dropzone → Supabase Storage), grades chart, FullCalendar events |
-| `parent` | `/portal/parent` | Multi-child switcher, radial attendance ring, bar grade chart, fee payment via Paystack, submission history, messaging panel |
-
-The `role` is stored on `User.role`, encoded in the NextAuth JWT, and available in `session.user.role` on both client and server. Dynamic route segments (e.g. `/portal/[role]`) are protected by `getServerSession(authOptions)` at the top of each server component.
-
----
-
-## Payment Integration
-
-Paystack is integrated in `src/app/portal/parent/ParentDashboardClient.tsx`.
-
-**Flow:**
-
-1. Parent clicks **Pay Now** — `window.PaystackPop.setup()` opens the Paystack modal.
-2. Currency and amount come from `schoolConfig.currency.code` and the fee record.
-3. On success, the Paystack callback POSTs `{ reference, feeId }` to `/api/fees/verify`.
-4. The verify route confirms the transaction with the Paystack REST API, then sets `FeeRecord.status = "paid"` and records `paidAt`.
-
-**To switch to Stripe:**
-
-- Replace `initializePaystack` in `ParentDashboardClient.tsx` with a `stripe.redirectToCheckout` call.
-- Replace `/api/fees/verify` with a Stripe webhook handler that verifies `stripe.webhooks.constructEvent`.
-- Update `schoolConfig.currency.code` to your Stripe-supported ISO code.
-
-**Paystack script**: Add `<Script src="https://js.paystack.co/v1/inline.js" strategy="beforeInteractive" />` in `src/app/layout.tsx` using `next/script` to load the Paystack SDK.
+| Layer      | Technology              |
+|------------|-------------------------|
+| Framework  | Next.js 14 (App Router) |
+| Language   | TypeScript              |
+| Styling    | Tailwind CSS v4         |
+| Database   | Supabase (PostgreSQL)   |
+| ORM        | Prisma                  |
+| Auth       | NextAuth.js             |
+| Payments   | Paystack                |
+| Email      | Resend                  |
+| Charts     | Recharts                |
+| Fonts      | Playfair Display + Inter|
+| Hosting    | Vercel + Supabase       |
 
 ---
 
-## File Uploads
+## Requirements
 
-Assignment submissions flow through `react-dropzone` → `/api/upload` → Supabase Storage.
-
-**Setup:**
-
-1. Create a Supabase Storage bucket named `uploads`.
-2. Set a policy that allows the service role key to insert objects (RLS bypass).
-3. Make the bucket public if you want direct public URLs for submitted files.
-
-The upload API route uses `getSupabaseAdmin()` (service role client) so it bypasses row-level security. Files are stored as `{folder}/{timestamp}-{originalFilename}` and the public URL is returned to the client.
+- Node.js 18+
+- npm or yarn
+- Supabase account (free tier sufficient)
+- Vercel account (free tier sufficient)
+- Paystack account (for live payments)
+- Resend account (for email notifications)
 
 ---
 
-## Email
+## License
 
-Transactional email uses [Resend](https://resend.com). Set `RESEND_API_KEY` and `EMAIL_FROM` in `.env.local`. Trigger emails from API route handlers, for example:
-
-```ts
-// In /api/admissions/[id]/route.ts after status update:
-import { Resend } from "resend";
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-await resend.emails.send({
-  from: process.env.EMAIL_FROM!,
-  to: application.email,
-  subject: `Your application to ${schoolConfig.name} has been updated`,
-  html: `<p>Status: ${newStatus}</p>`,
-});
-```
+**Regular License** — Single deployment for one school client.
+**Extended License** — Deploy for multiple school clients, resell as a service.
 
 ---
 
-## Seeding the Database
+## Support
 
-```bash
-npm run db:seed
-```
+For bugs or questions, open an issue on the GitHub repository.
 
-Populates the database with 30 students, 5 teachers, 10 parents, 3 class groups, attendance records, grades, fee records, news articles, events, announcements, and timetable data.
+For customization work or white-label deployment assistance, contact via the purchase platform.
 
-Staff and student email addresses are generated using `school.config.ts → seed.staffEmailDomain`. Update that value before seeding for a new school deployment.
+---
 
-**Default demo credentials:**
+## Changelog
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@greenfield.edu.ng` | `Admin@123` |
-| Teacher | `b.adeleke@greenfield.edu.ng` | `Teacher@123` |
-| Parent | `e.adeyemi@gmail.com` | `Parent@123` |
-| Student | `student1@greenfield.edu.ng` | `Student@123` |
-
-> Change these passwords immediately on any internet-facing deployment. The seed script is for development and demo purposes only.
+### v1.0.0
+- Initial release
+- 7 public pages
+- 32 portal pages across 4 roles
+- White-label config system
+- Paystack integration
+- Real-time messaging
+- Analytics dashboards
+- Seed script with demo data
