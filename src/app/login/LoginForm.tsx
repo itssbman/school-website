@@ -63,6 +63,7 @@ export default function LoginForm() {
       const result = await signIn("credentials", {
         email: email.trim(),
         password,
+        role: selectedRole,
         redirect: false,
       });
 

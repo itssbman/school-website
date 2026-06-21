@@ -6,7 +6,7 @@ export async function middleware(req: NextRequest) {
 
   if (!pathname.startsWith("/portal")) return NextResponse.next();
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || "schoolkit-demo-secret-key-2024" });
 
   if (!token) {
     const loginUrl = new URL("/login", req.url);
