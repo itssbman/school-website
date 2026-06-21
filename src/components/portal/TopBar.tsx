@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, Bell, Search, X } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Menu, Bell, Search, X, LogOut } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
-import { demoUsers } from "@/lib/demo-data";
 
 interface TopBarProps {
   title: string;
@@ -13,15 +13,18 @@ interface TopBarProps {
   unreadCount?: number;
 }
 
-type DemoRole = "parent" | "student" | "teacher" | "admin";
-
 export default function TopBar({ title, onMobileMenuToggle, unreadCount = 0 }: TopBarProps) {
-  const pathname = usePathname();
-  const segments = pathname.split("/").filter(Boolean);
-  const role = (segments[1] as DemoRole) || "student";
-  const demoUser = demoUsers[role] ?? demoUsers.student;
-
+  const { data: session } = useSession();
+  const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const userName = session?.user?.name ?? "User";
+  const avatar = session?.user?.avatar ?? undefined;
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+  };
 
   return (
     <header className="h-14 bg-white border-b border-[#E5E3DF] flex items-center px-4 lg:px-6 gap-4 sticky top-0 z-30">
@@ -73,8 +76,15 @@ export default function TopBar({ title, onMobileMenuToggle, unreadCount = 0 }: T
           )}
         </Link>
 
-        <div className="ml-1">
-          <Avatar src={undefined} name={demoUser.name} size="sm" />
+        <div className="ml-1 flex items-center gap-2">
+          <Avatar src={avatar} name={userName} size="sm" />
+          <button
+            onClick={handleSignOut}
+            title="Sign out"
+            className="p-1.5 text-[#9CA3AF] hover:text-[#C2593F] transition-colors hidden md:block"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </header>

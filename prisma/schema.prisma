@@ -161,6 +161,7 @@ model Assignment {
   description String
   dueDate     DateTime
   classId     String
+  subject     String?
   teacherId   String
   fileUrl     String?
   createdAt   DateTime @default(now())
@@ -200,6 +201,7 @@ model Announcement {
   title      String
   body       String
   targetRole String
+  classId    String?
   createdAt  DateTime @default(now())
   authorId   String
 
@@ -213,6 +215,7 @@ model Event {
   startDate   DateTime
   endDate     DateTime
   type        String
+  isPublic    Boolean  @default(true)
   createdAt   DateTime @default(now())
 }
 
@@ -235,6 +238,7 @@ model NewsArticle {
   body        String
   excerpt     String?
   imageUrl    String?
+  published   Boolean  @default(true)
   publishedAt DateTime @default(now())
   authorId    String
 
@@ -262,15 +266,17 @@ model LessonPlan {
 }
 
 model AdmissionApplication {
-  id        String            @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String
-  phone     String
-  class     String
-  status    ApplicationStatus @default(applied)
-  appliedAt DateTime          @default(now())
-  notes     String?
+  id          String            @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String
+  class       String
+  parentName  String?
+  parentPhone String?
+  status      ApplicationStatus @default(applied)
+  appliedAt   DateTime          @default(now())
+  notes       String?
 }
 
 model LibraryBook {
@@ -292,4 +298,16 @@ model Timetable {
   teacherId String
   startTime String
   endTime   String
+}
+
+model Exam {
+  id        String   @id @default(cuid())
+  subject   String
+  class     String
+  date      DateTime
+  startTime String
+  duration  String
+  venue     String
+  term      String
+  createdAt DateTime @default(now())
 }

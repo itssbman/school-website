@@ -2,9 +2,11 @@
 
 import { useState, ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { SessionProvider } from "next-auth/react";
 import Sidebar from "@/components/portal/Sidebar";
 import TopBar from "@/components/portal/TopBar";
 import DemoBanner from "@/components/portal/DemoBanner";
+import { ToastProvider } from "@/components/ui/Toast";
 
 function getPageTitle(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean);
@@ -13,7 +15,7 @@ function getPageTitle(pathname: string): string {
   return last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, " ");
 }
 
-export default function PortalLayout({ children }: { children: ReactNode }) {
+function PortalShell({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const title = getPageTitle(pathname);
@@ -39,5 +41,15 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PortalLayout({ children }: { children: ReactNode }) {
+  return (
+    <SessionProvider>
+      <ToastProvider>
+        <PortalShell>{children}</PortalShell>
+      </ToastProvider>
+    </SessionProvider>
   );
 }

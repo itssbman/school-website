@@ -1,60 +1,55 @@
-import { demoLibraryBooks } from "@/lib/demo-data";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Badge from "@/components/ui/Badge";
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
-const CATEGORIES = Array.from(new Set(demoLibraryBooks.map((b) => b.category)));
+export default async function StudentLibraryPage() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "student") redirect("/login");
 
-export default function StudentLibraryPage() {
+  const books = await prisma.libraryBook.findMany({ orderBy: { title: "asc" } }) as any[];
+  const categories = Array.from(new Set(books.map((b: any) => b.category as string)));
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-[#E5E3DF]">
-        <h2 className="font-heading text-[24px] font-bold text-[#1A2B49]">Library</h2>
-        <p className="text-[14px] text-[#6B7280]">Browse and reserve books from the school library</p>
+        <h2 className="font-heading text-[24px] font-bold text-[#1A2B49]">Library Catalogue</h2>
+        <p className="text-[14px] text-[#6B7280]">{books.length} books · {books.filter((b: any) => b.available).length} available</p>
       </div>
 
-      {/* Search (static demo) */}
-      <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
-        <input
-          disabled
-          placeholder="Search by title or author — available in full version"
-          className="w-full pl-9 pr-4 py-2.5 text-[13px] border border-[#E5E3DF] bg-[#F9F8F7] text-[#9CA3AF] cursor-not-allowed"
-        />
-      </div>
-
-      {/* Books grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {demoLibraryBooks.map((book) => (
-          <div key={book.id} className="bg-white border border-[#E5E3DF] p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-[#F5F4F2] flex items-center justify-center flex-shrink-0">
-                <BookOpen size={18} className="text-[#C2593F]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium text-[#1A2B49] leading-snug line-clamp-2">{book.title}</p>
-                <p className="text-[12px] text-[#6B7280] mt-1">{book.author}</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#E5E3DF]">
-              <span className="text-[11px] text-[#6B7280] bg-[#F5F4F2] px-2 py-0.5">{book.category}</span>
-              <Badge variant={book.available ? "success" : "danger"} size="sm">
-                {book.available ? "Available" : "Borrowed"}
-              </Badge>
-            </div>
-            <button
-              disabled
-              title="Available in full version"
-              className="mt-3 w-full py-1.5 text-[12px] font-medium border border-[#E5E3DF] text-[#9CA3AF] cursor-not-allowed opacity-60 bg-[#F9F8F7]"
-            >
-              {book.available ? "Reserve Book" : "Join Waitlist"}
-            </button>
+      {categories.map((cat) => (
+        <div key={cat}>
+          <h3 className="text-[13px] font-semibold text-[#6B7280] uppercase tracking-wider mb-3">{cat}</h3>
+          <div className="bg-white border border-[#E5E3DF] overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr><th>Title</th><th>Author</th><th>ISBN</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {books.filter((b: any) => b.category === cat).map((book: any) => (
+                  <tr key={book.id}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={14} className="text-[#9CA3AF]" />
+                        <span className="font-medium text-[#1A2B49]">{book.title}</span>
+                      </div>
+                    </td>
+                    <td className="text-[#6B7280]">{book.author}</td>
+                    <td className="text-[#6B7280] font-mono text-[12px]">{book.isbn ?? "—"}</td>
+                    <td>
+                      <Badge variant={book.available ? "success" : "danger"} size="sm">
+                        {book.available ? "Available" : "Checked Out"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
-
-      <p className="text-[12px] text-[#9CA3AF] text-center">
-        Book reservations and borrowing available in the full version
-      </p>
+        </div>
+      ))}
     </div>
   );
 }

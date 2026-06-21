@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
@@ -48,18 +49,35 @@ export default function LoginForm() {
     setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (!email.trim() || password.length < 8) {
-      setError("Please enter a valid email and password");
+      setError("Please enter a valid email and password.");
       return;
     }
 
     setLoading(true);
-    document.cookie = `demo_role=${selectedRole}; path=/; max-age=86400; SameSite=Lax`;
-    router.push(roleRedirects[selectedRole]);
+    try {
+      const result = await signIn("credentials", {
+        email: email.trim(),
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Invalid email or password. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      router.push(roleRedirects[selectedRole]);
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (

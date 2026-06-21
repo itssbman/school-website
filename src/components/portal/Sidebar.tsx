@@ -2,21 +2,21 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Avatar from "@/components/ui/Avatar";
-import { demoUsers } from "@/lib/demo-data";
 import schoolConfig from "../../../school.config";
 import {
   LayoutDashboard, Users, BookOpen, Calendar, MessageSquare,
   Bell, FileText, DollarSign, ClipboardList, Library,
   Upload, Settings, GraduationCap,
-  BarChart3, UserCheck, Newspaper, Image as ImageIcon,
-  ClipboardCheck, BookMarked, ArrowLeft,
+  BarChart3, UserCheck, Newspaper,
+  ClipboardCheck, BookMarked, ArrowLeft, LogOut,
 } from "lucide-react";
 
-type DemoRole = "parent" | "student" | "teacher" | "admin";
+type PortalRole = "parent" | "student" | "teacher" | "admin";
 
-function getNavItems(role: DemoRole) {
+function getNavItems(role: PortalRole) {
   switch (role) {
     case "parent":
       return [
@@ -28,7 +28,7 @@ function getNavItems(role: DemoRole) {
         { label: "Fee Records",  href: "/portal/parent/fees",         icon: DollarSign },
         { label: "Messages",     href: "/portal/parent/messages",     icon: MessageSquare },
         { label: "Announcements",href: "/portal/parent/announcements",icon: Bell },
-        { label: "Report Cards", href: "/portal/parent/report-cards",  icon: FileText },
+        { label: "Report Cards", href: "/portal/parent/report-cards", icon: FileText },
       ];
     case "student":
       return [
@@ -43,27 +43,27 @@ function getNavItems(role: DemoRole) {
       ];
     case "teacher":
       return [
-        { label: "Dashboard",    href: "/portal/teacher",                  icon: LayoutDashboard },
-        { label: "My Classes",   href: "/portal/teacher/classes",          icon: Users },
-        { label: "Attendance",   href: "/portal/teacher/attendance",       icon: ClipboardCheck },
-        { label: "Grade Entry",  href: "/portal/teacher/grades",           icon: BookOpen },
-        { label: "Assignments",  href: "/portal/teacher/assignments",      icon: ClipboardList },
-        { label: "Lesson Plans", href: "/portal/teacher/lesson-plans",     icon: Upload },
-        { label: "Announcements",href: "/portal/teacher/announcements",    icon: Bell },
-        { label: "Messages",     href: "/portal/teacher/messages",         icon: MessageSquare },
+        { label: "Dashboard",    href: "/portal/teacher",             icon: LayoutDashboard },
+        { label: "My Classes",   href: "/portal/teacher/classes",     icon: Users },
+        { label: "Attendance",   href: "/portal/teacher/attendance",  icon: ClipboardCheck },
+        { label: "Grade Entry",  href: "/portal/teacher/grades",      icon: BookOpen },
+        { label: "Assignments",  href: "/portal/teacher/assignments", icon: ClipboardList },
+        { label: "Lesson Plans", href: "/portal/teacher/lesson-plans",icon: Upload },
+        { label: "Announcements",href: "/portal/teacher/announcements",icon: Bell },
+        { label: "Messages",     href: "/portal/teacher/messages",   icon: MessageSquare },
       ];
     case "admin":
       return [
-        { label: "Dashboard",    href: "/portal/admin",             icon: LayoutDashboard },
-        { label: "Analytics",     href: "/portal/admin/analytics",  icon: BarChart3 },
-        { label: "Users",         href: "/portal/admin/users",      icon: Users },
-        { label: "Students",      href: "/portal/admin/students",   icon: GraduationCap },
-        { label: "Staff",         href: "/portal/admin/staff",      icon: Users },
-        { label: "Admissions",    href: "/portal/admin/admissions", icon: UserCheck },
-        { label: "Fee Management",href: "/portal/admin/fees",       icon: DollarSign },
-        { label: "Content",       href: "/portal/admin/content",    icon: Newspaper },
-        { label: "Exam Schedule", href: "/portal/admin/exams",      icon: ClipboardList },
-        { label: "Settings",      href: "/portal/admin/settings",   icon: Settings },
+        { label: "Dashboard",     href: "/portal/admin",             icon: LayoutDashboard },
+        { label: "Analytics",     href: "/portal/admin/analytics",   icon: BarChart3 },
+        { label: "Users",         href: "/portal/admin/users",       icon: Users },
+        { label: "Students",      href: "/portal/admin/students",    icon: GraduationCap },
+        { label: "Staff",         href: "/portal/admin/staff",       icon: Users },
+        { label: "Admissions",    href: "/portal/admin/admissions",  icon: UserCheck },
+        { label: "Fee Management",href: "/portal/admin/fees",        icon: DollarSign },
+        { label: "Content",       href: "/portal/admin/content",     icon: Newspaper },
+        { label: "Exam Schedule", href: "/portal/admin/exams",       icon: ClipboardList },
+        { label: "Settings",      href: "/portal/admin/settings",    icon: Settings },
       ];
   }
 }
@@ -76,15 +76,14 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
 
-  // Derive role from the URL — no session required
-  const segments = pathname.split("/").filter(Boolean);
-  const role = (segments[1] as DemoRole) || "student";
-  const demoUser = demoUsers[role] ?? demoUsers.student;
+  const role = (session?.user?.role ?? "student") as PortalRole;
+  const userName = session?.user?.name ?? "User";
   const navItems = getNavItems(role);
 
-  const switchRole = () => {
-    document.cookie = "demo_role=; path=/; max-age=0";
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
     router.push("/login");
   };
 
@@ -125,19 +124,26 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
       <div className="p-3 border-t border-[#E5E3DF]">
         <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
-          <Avatar src={undefined} name={demoUser.name} size="sm" />
+          <Avatar src={session?.user?.avatar ?? undefined} name={userName} size="sm" />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-[#1A2B49] truncate">{demoUser.name}</p>
+            <p className="text-[13px] font-medium text-[#1A2B49] truncate">{userName}</p>
             <p className="text-[11px] text-[#6B7280] capitalize">{role}</p>
           </div>
         </div>
         <button
-          onClick={switchRole}
+          onClick={handleSignOut}
+          className="portal-nav-link w-full text-left text-[#6B7280] hover:bg-[#F5F4F2] hover:text-[#C2593F]"
+        >
+          <LogOut size={15} />
+          <span>Sign Out</span>
+        </button>
+        <Link
+          href="/"
           className="portal-nav-link w-full text-left text-[#6B7280] hover:bg-[#F5F4F2] hover:text-[#1A2B49]"
         >
           <ArrowLeft size={15} />
-          <span>Switch Role</span>
-        </button>
+          <span>Back to Website</span>
+        </Link>
       </div>
     </div>
   );

@@ -1,33 +1,53 @@
-import { demoTermFees, demoAdminStudents } from "@/lib/demo-data";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Badge from "@/components/ui/Badge";
 
 function fmt(n: number) {
   return "₦" + n.toLocaleString("en-NG");
 }
 
-export default function AdminFeesPage() {
-  const paid    = demoTermFees.filter((f) => f.status === "paid").length;
-  const pending = demoTermFees.filter((f) => f.status === "pending").length;
-  const overdue = demoTermFees.filter((f) => f.status === "overdue").length;
+function feeVariant(s: string): "success" | "warning" | "danger" {
+  if (s === "paid") return "success";
+  if (s === "overdue") return "danger";
+  return "warning";
+}
 
-  const amtPaid    = paid    * 750000;
-  const amtPending = pending * 750000;
-  const amtOverdue = overdue * 750000;
-  const amtTotal   = demoTermFees.length * 750000;
+export default async function AdminFeesPage() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") redirect("/login");
 
-  // Simple bar widths
-  const paidPct    = Math.round((paid    / demoTermFees.length) * 100);
-  const pendingPct = Math.round((pending / demoTermFees.length) * 100);
+  const fees = await prisma.feeRecord.findMany({
+    orderBy: { dueDate: "desc" },
+    include: {
+      student: {
+        include: { user: { select: { name: true } } },
+      },
+    },
+  });
+
+  const feeList = fees as any[];
+  const paid    = feeList.filter((f: any) => f.status === "paid");
+  const pending = feeList.filter((f: any) => f.status === "pending");
+  const overdue = feeList.filter((f: any) => f.status === "overdue");
+
+  const amtPaid    = paid.reduce((s: number, f: any) => s + f.amount, 0);
+  const amtPending = pending.reduce((s: number, f: any) => s + f.amount, 0);
+  const amtOverdue = overdue.reduce((s: number, f: any) => s + f.amount, 0);
+  const amtTotal   = feeList.reduce((s: number, f: any) => s + f.amount, 0);
+
+  const paidPct    = feeList.length > 0 ? Math.round((paid.length / feeList.length) * 100) : 0;
+  const pendingPct = fees.length > 0 ? Math.round((pending.length / fees.length) * 100) : 0;
   const overduePct = 100 - paidPct - pendingPct;
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-[#E5E3DF]">
         <h2 className="font-heading text-[24px] font-bold text-[#1A2B49]">Fee Management</h2>
-        <p className="text-[14px] text-[#6B7280]">Term 1 2025/26 · {demoTermFees.length} records</p>
+        <p className="text-[14px] text-[#6B7280]">Current term · {feeList.length} records</p>
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Billed",  value: fmt(amtTotal),   color: "text-[#1A2B49]" },
@@ -42,7 +62,6 @@ export default function AdminFeesPage() {
         ))}
       </div>
 
-      {/* Collection progress bar */}
       <div className="bg-white border border-[#E5E3DF] p-5">
         <p className="text-[13px] font-semibold text-[#1A2B49] mb-3">Collection Breakdown</p>
         <div className="flex h-4 overflow-hidden border border-[#E5E3DF]">
@@ -57,13 +76,9 @@ export default function AdminFeesPage() {
         </div>
       </div>
 
-      {/* Sample student fee records */}
       <div className="bg-white border border-[#E5E3DF] overflow-x-auto">
-        <div className="px-5 py-3 border-b border-[#E5E3DF] bg-[#F9F8F7] flex items-center justify-between">
-          <p className="text-[13px] font-semibold text-[#1A2B49]">Student Fee Records (Sample)</p>
-          <button disabled title="Available in full version" className="text-[12px] border border-[#E5E3DF] px-3 py-1 text-[#9CA3AF] cursor-not-allowed opacity-60 bg-white">
-            Export
-          </button>
+        <div className="px-5 py-3 border-b border-[#E5E3DF] bg-[#F9F8F7]">
+          <p className="text-[13px] font-semibold text-[#1A2B49]">Fee Records ({fees.length})</p>
         </div>
         <table className="data-table">
           <thead>
@@ -73,32 +88,26 @@ export default function AdminFeesPage() {
               <th>Term</th>
               <th className="text-right">Amount</th>
               <th>Status</th>
-              <th className="text-center">Action</th>
             </tr>
           </thead>
           <tbody>
-            {demoAdminStudents.slice(0, 8).map((s) => (
-              <tr key={s.id}>
-                <td className="font-medium text-[#1A2B49]">{s.name}</td>
-                <td className="text-[#6B7280]">{s.class}</td>
-                <td className="text-[#6B7280] text-[13px]">Term 1 2025/26</td>
-                <td className="text-right font-mono text-[13px] text-[#1A2B49]">{fmt(750000)}</td>
-                <td>
-                  <Badge
-                    variant={s.feeStatus === "paid" ? "success" : s.feeStatus === "overdue" ? "danger" : "warning"}
-                    size="sm"
-                    className="capitalize"
-                  >
-                    {s.feeStatus}
-                  </Badge>
-                </td>
-                <td className="text-center">
-                  <button disabled title="Available in full version" className="text-[12px] border border-[#E5E3DF] px-3 py-1 text-[#9CA3AF] cursor-not-allowed opacity-60 bg-[#F9F8F7]">
-                    Record
-                  </button>
-                </td>
+            {feeList.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center py-8 text-[#6B7280]">No fee records yet.</td>
               </tr>
-            ))}
+            ) : (
+              feeList.map((f: any) => (
+                <tr key={f.id}>
+                  <td className="font-medium text-[#1A2B49]">{f.student?.user?.name ?? "—"}</td>
+                  <td className="text-[#6B7280]">{f.student?.class ?? "—"}</td>
+                  <td className="text-[#6B7280] text-[13px]">{f.term ?? "Current Term"}</td>
+                  <td className="text-right font-mono text-[13px] text-[#1A2B49]">{fmt(f.amount)}</td>
+                  <td>
+                    <Badge variant={feeVariant(f.status)} size="sm" className="capitalize">{f.status}</Badge>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

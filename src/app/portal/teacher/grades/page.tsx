@@ -1,75 +1,39 @@
-import { demoTeacherGrades, demoTeacher } from "@/lib/demo-data";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import GradesClient from "./GradesClient";
 
-function scoreColor(score: number) {
-  if (score >= 70) return "text-[#3D5A45] font-semibold";
-  if (score >= 50) return "text-[#D97706] font-semibold";
-  return "text-[#C2593F] font-semibold";
-}
+export default async function TeacherGradesPage() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "teacher") redirect("/login");
 
-export default function TeacherGradesPage() {
-  const classes = demoTeacher.classes;
+  const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+  if (!teacher) redirect("/login");
 
-  return (
-    <div className="space-y-8">
-      <div className="pb-4 border-b border-[#E5E3DF]">
-        <h2 className="font-heading text-[24px] font-bold text-[#1A2B49]">Grade Entry</h2>
-        <p className="text-[14px] text-[#6B7280]">View and manage student scores</p>
-      </div>
+  const sheets = await Promise.all(
+    teacher.classes.map(async (cls: string) => {
+      const students = await prisma.student.findMany({
+        where: { class: cls },
+        include: {
+          user: { select: { name: true } },
+          grades: { orderBy: { createdAt: "desc" } },
+        },
+        orderBy: { user: { name: "asc" } },
+      });
 
-      {classes.map((className) => {
-        const sheet = demoTeacherGrades[className as keyof typeof demoTeacherGrades];
-        if (!sheet) return null;
+      const studentRows = students.map((s: any) => {
+        const gradeMap: Record<string, number> = {};
+        for (const sub of teacher.subjects) {
+          const latest = s.grades.find((g: any) => g.subject === sub);
+          if (latest) gradeMap[sub] = latest.score;
+        }
+        return { id: s.id, name: s.user.name, grades: gradeMap };
+      });
 
-        return (
-          <div key={className} className="bg-white border border-[#E5E3DF]">
-            <div className="px-5 py-4 border-b border-[#E5E3DF] flex items-center justify-between">
-              <div>
-                <p className="font-heading text-[15px] font-bold text-[#1A2B49]">Class {className}</p>
-                <p className="text-[12px] text-[#6B7280]">{sheet.students.length} students · {sheet.columns.length} assessments</p>
-              </div>
-              <button
-                disabled
-                title="Available in full version"
-                className="px-4 py-2 text-[12px] font-medium border border-[#E5E3DF] text-[#9CA3AF] cursor-not-allowed opacity-60 bg-[#F9F8F7]"
-              >
-                Save Grades
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Student</th>
-                    {sheet.columns.map((col) => (
-                      <th key={col} className="text-center">{col}</th>
-                    ))}
-                    <th className="text-center">Average</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sheet.students.map((s, i) => {
-                    const avg = Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length);
-                    return (
-                      <tr key={s.name}>
-                        <td className="text-[#6B7280] font-mono text-[13px]">{String(i + 1).padStart(2, "0")}</td>
-                        <td className="font-medium text-[#1A2B49]">{s.name}</td>
-                        {s.scores.map((score, j) => (
-                          <td key={j} className={`text-center font-mono text-[13px] ${scoreColor(score)}`}>
-                            {score}
-                          </td>
-                        ))}
-                        <td className={`text-center font-mono text-[13px] ${scoreColor(avg)}`}>{avg}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+      return { class: cls, subjects: teacher.subjects, students: studentRows };
+    })
   );
+
+  return <GradesClient sheets={JSON.parse(JSON.stringify(sheets))} />;
 }
