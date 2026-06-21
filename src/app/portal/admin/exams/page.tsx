@@ -1,21 +1,19 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoExamTimetable } from "@/lib/demo-data";
 import ExamsClient from "./ExamsClient";
 
-export default async function AdminExamsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "admin") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const exams = await prisma.exam.findMany({
-    orderBy: [{ class: "asc" }, { date: "asc" }],
-  });
+const initialExams = demoExamTimetable.map((e) => ({
+  id: e.id,
+  subject: e.subject,
+  class: e.class,
+  date: e.date,
+  startTime: e.time,
+  duration: e.duration,
+  venue: e.venue,
+  term: "Term 1 2025/26",
+}));
 
-  const serialized = exams.map((e: any) => ({
-    ...e,
-    date: e.date instanceof Date ? e.date.toISOString().split("T")[0] : e.date,
-  }));
-
-  return <ExamsClient initialExams={JSON.parse(JSON.stringify(serialized))} />;
+export default function AdminExamsPage() {
+  return <ExamsClient initialExams={initialExams} />;
 }

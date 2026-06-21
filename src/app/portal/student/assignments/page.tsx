@@ -1,31 +1,17 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoStudent, demoAssignments } from "@/lib/demo-data";
 import StudentAssignmentsClient from "./StudentAssignmentsClient";
 
-export default async function StudentAssignmentsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "student") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const student = await prisma.student.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      submissions: { include: { assignment: true } },
-    },
-  });
-  if (!student) redirect("/login");
+const assignments = demoAssignments.map((a) => ({ ...a, description: "" }));
+const submissions = demoStudent.submissions.map((s) => ({ ...s, fileUrl: "#", studentId: demoStudent.id }));
 
-  const assignments = await prisma.assignment.findMany({
-    where: { classId: student.class },
-    orderBy: { dueDate: "asc" },
-  });
-
+export default function StudentAssignmentsPage() {
   return (
     <StudentAssignmentsClient
-      studentId={student.id}
-      assignments={JSON.parse(JSON.stringify(assignments))}
-      submissions={JSON.parse(JSON.stringify(student.submissions))}
+      studentId={demoStudent.id}
+      assignments={assignments as any}
+      submissions={submissions as any}
     />
   );
 }

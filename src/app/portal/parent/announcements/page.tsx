@@ -1,20 +1,15 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoAnnouncements } from "@/lib/demo-data";
 import { format } from "date-fns";
 import { Bell } from "lucide-react";
 
-export default async function ParentAnnouncementsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "parent") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const announcements = await prisma.announcement.findMany({
-    where: { targetRole: { in: ["parent", "all"] } },
-    include: { author: { select: { name: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+const announcements = demoAnnouncements.parent.map((a) => ({
+  ...a,
+  author: { name: "School Admin" },
+}));
 
+export default function ParentAnnouncementsPage() {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-[#E5E3DF]">
@@ -29,7 +24,7 @@ export default async function ParentAnnouncementsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {(announcements as any[]).map((ann: any) => (
+          {announcements.map((ann) => (
             <div key={ann.id} className="bg-white border border-[#E5E3DF] p-5">
               <div className="flex items-start gap-4">
                 <div className="w-9 h-9 bg-[#F9F8F7] border border-[#E5E3DF] flex items-center justify-center flex-shrink-0">

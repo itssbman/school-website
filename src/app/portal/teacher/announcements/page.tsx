@@ -1,22 +1,14 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoAnnouncements } from "@/lib/demo-data";
 import AnnouncementsClient from "./AnnouncementsClient";
 
-export default async function TeacherAnnouncementsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "teacher") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const announcements = await prisma.announcement.findMany({
-    where: { targetRole: { in: ["teacher", "all"] } },
-    orderBy: { createdAt: "desc" },
-    include: { author: { select: { name: true } } },
-  });
+const initialAnnouncements = demoAnnouncements.teacher.map((a) => ({
+  ...a,
+  targetRole: "teacher" as const,
+  author: { name: "School Admin" },
+}));
 
-  return (
-    <AnnouncementsClient
-      initialAnnouncements={JSON.parse(JSON.stringify(announcements))}
-    />
-  );
+export default function TeacherAnnouncementsPage() {
+  return <AnnouncementsClient initialAnnouncements={initialAnnouncements} />;
 }

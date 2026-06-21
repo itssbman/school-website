@@ -1,35 +1,29 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { demoAssignments, demoStudent } from "@/lib/demo-data";
 import AssignmentSubmitClient from "./AssignmentSubmitClient";
+import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 export default async function AssignmentPage({ params }: Props) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "student") redirect("/login");
-
   const { id } = await params;
-  const student = await prisma.student.findUnique({ where: { userId: session.user.id } });
-  if (!student) redirect("/login");
-
-  const assignment = await prisma.assignment.findUnique({
-    where: { id },
-    include: {
-      teacher: { include: { user: { select: { name: true } } } },
-      submissions: { where: { studentId: student.id } },
-    },
-  });
-
+  const assignment = demoAssignments.find((a) => a.id === id);
   if (!assignment) notFound();
+
+  const demoAssignment = {
+    ...assignment,
+    description: "Complete the assigned work and submit your answer sheet as a PDF.",
+    teacher: { user: { name: "Mr. Alex Demo" } },
+    submissions: [],
+  };
 
   return (
     <AssignmentSubmitClient
-      assignment={JSON.parse(JSON.stringify(assignment))}
-      studentId={student.id}
+      assignment={demoAssignment}
+      studentId={demoStudent.id}
     />
   );
 }

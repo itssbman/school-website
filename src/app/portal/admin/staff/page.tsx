@@ -1,19 +1,17 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoStaff } from "@/lib/demo-data";
 import StaffClient from "./StaffClient";
 
-export default async function AdminStaffPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "admin") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const staff = await prisma.teacher.findMany({
-    orderBy: { user: { name: "asc" } },
-    include: {
-      user: { select: { id: true, name: true, email: true, role: true, active: true } },
-    },
-  });
+const initialStaff = demoStaff
+  .filter((s) => s.role === "teacher")
+  .map((s) => ({
+    id: s.id,
+    subjects: s.subjects,
+    classes: [] as string[],
+    user: { id: s.id, name: s.name, email: s.email, role: s.role, active: s.active },
+  }));
 
-  return <StaffClient initialStaff={JSON.parse(JSON.stringify(staff))} />;
+export default function AdminStaffPage() {
+  return <StaffClient initialStaff={initialStaff} />;
 }

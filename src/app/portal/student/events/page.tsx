@@ -1,10 +1,8 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoEvents } from "@/lib/demo-data";
 import { format } from "date-fns";
 import { Calendar } from "lucide-react";
-import Badge from "@/components/ui/Badge";
+
+export const dynamic = "force-dynamic";
 
 const TYPE_COLORS: Record<string, string> = {
   Academic:    "bg-[#1A2B49] text-white",
@@ -14,18 +12,10 @@ const TYPE_COLORS: Record<string, string> = {
   Celebration: "bg-[#6B7280] text-white",
 };
 
-export default async function StudentEventsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "student") redirect("/login");
-
-  const events = await prisma.event.findMany({
-    where: { isPublic: true },
-    orderBy: { startDate: "asc" },
-  });
-
-  const eventList = events as any[];
-  const upcoming = eventList.filter((e: any) => new Date(e.startDate) >= new Date());
-  const past     = eventList.filter((e: any) => new Date(e.startDate) < new Date());
+export default function StudentEventsPage() {
+  const now = new Date();
+  const upcoming = demoEvents.filter((e) => new Date(e.startDate) >= now);
+  const past     = demoEvents.filter((e) => new Date(e.startDate) < now);
 
   return (
     <div className="space-y-6">
@@ -38,7 +28,7 @@ export default async function StudentEventsPage() {
         <>
           <h3 className="text-[13px] font-semibold text-[#6B7280] uppercase tracking-wider">Upcoming</h3>
           <div className="space-y-3">
-            {upcoming.map((evt: any) => (
+            {upcoming.map((evt) => (
               <div key={evt.id} className="bg-white border border-[#E5E3DF] p-5 flex items-start gap-5">
                 <div className="flex-shrink-0 text-center w-14">
                   <p className="text-[24px] font-bold font-heading text-[#C2593F] leading-none">
@@ -53,10 +43,6 @@ export default async function StudentEventsPage() {
                       {evt.type}
                     </span>
                   </div>
-                  <p className="text-[13px] text-[#6B7280]">{evt.description}</p>
-                  <p className="text-[12px] text-[#9CA3AF] mt-2">
-                    {format(new Date(evt.startDate), "h:mm a")} – {format(new Date(evt.endDate), "h:mm a")}
-                  </p>
                 </div>
               </div>
             ))}
@@ -68,7 +54,7 @@ export default async function StudentEventsPage() {
         <>
           <h3 className="text-[13px] font-semibold text-[#6B7280] uppercase tracking-wider mt-4">Past Events</h3>
           <div className="space-y-2 opacity-70">
-            {past.map((evt: any) => (
+            {past.map((evt) => (
               <div key={evt.id} className="bg-white border border-[#E5E3DF] px-5 py-3 flex items-center gap-4">
                 <Calendar size={16} className="text-[#9CA3AF] flex-shrink-0" />
                 <span className="text-[13px] text-[#6B7280]">{evt.title}</span>
@@ -79,7 +65,7 @@ export default async function StudentEventsPage() {
         </>
       )}
 
-      {events.length === 0 && (
+      {demoEvents.length === 0 && (
         <div className="bg-white border border-[#E5E3DF] p-12 text-center">
           <Calendar size={32} className="text-[#E5E3DF] mx-auto mb-3" />
           <p className="text-[#6B7280]">No events scheduled.</p>

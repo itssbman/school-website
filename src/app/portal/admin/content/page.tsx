@@ -1,26 +1,25 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoNewsArticles, demoAnnouncements, demoEvents } from "@/lib/demo-data";
 import ContentClient from "./ContentClient";
 
-export default async function AdminContentPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "admin") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const [news, events, announcements, gallery] = await Promise.all([
-    prisma.newsArticle.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.event.findMany({ orderBy: { startDate: "asc" } }),
-    prisma.announcement.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.galleryItem.findMany({ orderBy: { createdAt: "desc" } }),
-  ]);
+const initialNews = demoNewsArticles.map((n) => ({ ...n, published: !n.draft }));
 
+const initialEvents = demoEvents.map((e) => ({ ...e, isPublic: true, endDate: e.startDate }));
+
+const initialAnnouncements = [
+  ...demoAnnouncements.parent,
+  ...demoAnnouncements.student,
+  ...demoAnnouncements.teacher,
+].map((a) => ({ ...a, targetRole: "all", author: { name: "School Admin" } }));
+
+export default function AdminContentPage() {
   return (
     <ContentClient
-      initialNews={JSON.parse(JSON.stringify(news))}
-      initialEvents={JSON.parse(JSON.stringify(events))}
-      initialAnnouncements={JSON.parse(JSON.stringify(announcements))}
-      initialGallery={JSON.parse(JSON.stringify(gallery))}
+      initialNews={initialNews as any}
+      initialEvents={initialEvents as any}
+      initialAnnouncements={initialAnnouncements as any}
+      initialGallery={[]}
     />
   );
 }

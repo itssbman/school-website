@@ -1,25 +1,12 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoTimetableAll } from "@/lib/demo-data";
+
+export const dynamic = "force-dynamic";
 
 const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-export default async function StudentTimetablePage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "student") redirect("/login");
-
-  const student = await prisma.student.findUnique({ where: { userId: session.user.id } });
-  if (!student) redirect("/login");
-
-  const slots = await prisma.timetable.findMany({
-    where: { class: student.class },
-    orderBy: [{ day: "asc" }, { period: "asc" }],
-  });
-
-  const slotList = slots as any[];
-  const byDay = DAY_ORDER.reduce<Record<string, any[]>>((acc, day) => {
-    acc[day] = slotList.filter((s: any) => s.day === day);
+export default function StudentTimetablePage() {
+  const byDay = DAY_ORDER.reduce<Record<string, typeof demoTimetableAll>>((acc, day) => {
+    acc[day] = demoTimetableAll.filter((s) => s.day === day);
     return acc;
   }, {});
 
@@ -27,7 +14,7 @@ export default async function StudentTimetablePage() {
     <div className="space-y-6">
       <div className="pb-4 border-b border-[#E5E3DF]">
         <h2 className="font-heading text-[24px] font-bold text-[#1A2B49]">Timetable</h2>
-        <p className="text-[14px] text-[#6B7280]">Class {student.class} · Weekly schedule</p>
+        <p className="text-[14px] text-[#6B7280]">Class JSS1A · Weekly schedule</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3">

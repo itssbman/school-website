@@ -1,26 +1,8 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoParent } from "@/lib/demo-data";
 import ParentAttendanceClient from "./ParentAttendanceClient";
 
-export default async function ParentAttendancePage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "parent") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const parent = await prisma.parent.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      children: {
-        include: {
-          user: { select: { name: true } },
-          attendance: { orderBy: { date: "desc" }, take: 60 },
-        },
-      },
-    },
-  });
-
-  if (!parent) redirect("/login");
-
-  return <ParentAttendanceClient children={JSON.parse(JSON.stringify(parent.children))} />;
+export default function ParentAttendancePage() {
+  return <ParentAttendanceClient children={demoParent.children} />;
 }

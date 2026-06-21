@@ -1,22 +1,19 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoLibraryBooks } from "@/lib/demo-data";
 import Badge from "@/components/ui/Badge";
 import { BookOpen } from "lucide-react";
 
-export default async function StudentLibraryPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "student") redirect("/login");
+export const dynamic = "force-dynamic";
 
-  const books = await prisma.libraryBook.findMany({ orderBy: { title: "asc" } }) as any[];
-  const categories = Array.from(new Set(books.map((b: any) => b.category as string)));
+export default function StudentLibraryPage() {
+  const categories = Array.from(new Set(demoLibraryBooks.map((b) => b.category)));
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-[#E5E3DF]">
         <h2 className="font-heading text-[24px] font-bold text-[#1A2B49]">Library Catalogue</h2>
-        <p className="text-[14px] text-[#6B7280]">{books.length} books · {books.filter((b: any) => b.available).length} available</p>
+        <p className="text-[14px] text-[#6B7280]">
+          {demoLibraryBooks.length} books · {demoLibraryBooks.filter((b) => b.available).length} available
+        </p>
       </div>
 
       {categories.map((cat) => (
@@ -25,10 +22,10 @@ export default async function StudentLibraryPage() {
           <div className="bg-white border border-[#E5E3DF] overflow-x-auto">
             <table className="data-table">
               <thead>
-                <tr><th>Title</th><th>Author</th><th>ISBN</th><th>Status</th></tr>
+                <tr><th>Title</th><th>Author</th><th>Status</th></tr>
               </thead>
               <tbody>
-                {books.filter((b: any) => b.category === cat).map((book: any) => (
+                {demoLibraryBooks.filter((b) => b.category === cat).map((book) => (
                   <tr key={book.id}>
                     <td>
                       <div className="flex items-center gap-2">
@@ -37,7 +34,6 @@ export default async function StudentLibraryPage() {
                       </div>
                     </td>
                     <td className="text-[#6B7280]">{book.author}</td>
-                    <td className="text-[#6B7280] font-mono text-[12px]">{book.isbn ?? "—"}</td>
                     <td>
                       <Badge variant={book.available ? "success" : "danger"} size="sm">
                         {book.available ? "Available" : "Checked Out"}

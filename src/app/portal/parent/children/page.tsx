@@ -1,15 +1,14 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoParent } from "@/lib/demo-data";
 import Badge from "@/components/ui/Badge";
+
+export const dynamic = "force-dynamic";
 
 function attendanceRate(records: { status: string }[]) {
   if (!records.length) return 0;
   return Math.round((records.filter((r) => r.status === "present").length / records.length) * 100);
 }
 
-function avgScore(grades: { score: number; term: string }[]) {
+function avgScore(grades: { score: number }[]) {
   if (!grades.length) return null;
   return Math.round(grades.reduce((s, g) => s + g.score, 0) / grades.length);
 }
@@ -28,26 +27,8 @@ function feeStatusLabel(records: { status: string }[]) {
   return "Pending";
 }
 
-export default async function ParentChildrenPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "parent") redirect("/login");
-
-  const parent = await prisma.parent.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      children: {
-        include: {
-          user: { select: { name: true, email: true, avatar: true } },
-          grades: { orderBy: { createdAt: "desc" } },
-          attendance: { orderBy: { date: "desc" }, take: 60 },
-          feeRecords: { orderBy: { dueDate: "desc" } },
-        },
-      },
-    },
-  });
-
-  if (!parent) redirect("/login");
-  const children = parent.children;
+export default function ParentChildrenPage() {
+  const children = demoParent.children;
 
   return (
     <div className="space-y-6">
@@ -58,14 +39,8 @@ export default async function ParentChildrenPage() {
         </p>
       </div>
 
-      {children.length === 0 && (
-        <div className="bg-white border border-[#E5E3DF] p-12 text-center">
-          <p className="text-[#6B7280]">No children linked to your account. Contact the school office.</p>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {(children as any[]).map((child: any) => {
+        {children.map((child) => {
           const rate = attendanceRate(child.attendance);
           const avg  = avgScore(child.grades);
 
@@ -102,10 +77,6 @@ export default async function ParentChildrenPage() {
                   <Badge variant={feeStatusVariant(child.feeRecords)} size="sm">
                     {feeStatusLabel(child.feeRecords)}
                   </Badge>
-                </div>
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-[#6B7280]">Email</span>
-                  <span className="font-medium text-[#1A2B49] font-mono text-[12px]">{child.user.email}</span>
                 </div>
               </div>
             </div>

@@ -1,51 +1,42 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { demoTermFees, demoAdminStudents } from "@/lib/demo-data";
 import Badge from "@/components/ui/Badge";
 
-function fmt(n: number) {
-  return "₦" + n.toLocaleString("en-NG");
-}
+export const dynamic = "force-dynamic";
 
+function fmt(n: number) { return "₦" + n.toLocaleString("en-NG"); }
 function feeVariant(s: string): "success" | "warning" | "danger" {
   if (s === "paid") return "success";
   if (s === "overdue") return "danger";
   return "warning";
 }
 
-export default async function AdminFeesPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "admin") redirect("/login");
+const feeList = demoTermFees;
+const paid    = feeList.filter((f) => f.status === "paid");
+const pending = feeList.filter((f) => f.status === "pending");
+const overdue = feeList.filter((f) => f.status === "overdue");
 
-  const fees = await prisma.feeRecord.findMany({
-    orderBy: { dueDate: "desc" },
-    include: {
-      student: {
-        include: { user: { select: { name: true } } },
-      },
-    },
-  });
+const amtPaid    = paid.reduce((s, f) => s + f.amount, 0);
+const amtPending = pending.reduce((s, f) => s + f.amount, 0);
+const amtOverdue = overdue.reduce((s, f) => s + f.amount, 0);
+const amtTotal   = feeList.reduce((s, f) => s + f.amount, 0);
+const paidPct    = feeList.length > 0 ? Math.round((paid.length / feeList.length) * 100) : 0;
+const pendingPct = feeList.length > 0 ? Math.round((pending.length / feeList.length) * 100) : 0;
+const overduePct = 100 - paidPct - pendingPct;
 
-  const feeList = fees as any[];
-  const paid    = feeList.filter((f: any) => f.status === "paid");
-  const pending = feeList.filter((f: any) => f.status === "pending");
-  const overdue = feeList.filter((f: any) => f.status === "overdue");
+const detailedFees = demoAdminStudents.map((s, i) => ({
+  id: `fee-detail-${i}`,
+  amount: 750000,
+  status: s.feeStatus,
+  term: "Term 1 2025/26",
+  student: { class: s.class, user: { name: s.name } },
+}));
 
-  const amtPaid    = paid.reduce((s: number, f: any) => s + f.amount, 0);
-  const amtPending = pending.reduce((s: number, f: any) => s + f.amount, 0);
-  const amtOverdue = overdue.reduce((s: number, f: any) => s + f.amount, 0);
-  const amtTotal   = feeList.reduce((s: number, f: any) => s + f.amount, 0);
-
-  const paidPct    = feeList.length > 0 ? Math.round((paid.length / feeList.length) * 100) : 0;
-  const pendingPct = fees.length > 0 ? Math.round((pending.length / fees.length) * 100) : 0;
-  const overduePct = 100 - paidPct - pendingPct;
-
+export default function AdminFeesPage() {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-[#E5E3DF]">
         <h2 className="font-heading text-[24px] font-bold text-[#1A2B49]">Fee Management</h2>
-        <p className="text-[14px] text-[#6B7280]">Current term · {feeList.length} records</p>
+        <p className="text-[14px] text-[#6B7280]">Current term · {detailedFees.length} records</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -78,36 +69,25 @@ export default async function AdminFeesPage() {
 
       <div className="bg-white border border-[#E5E3DF] overflow-x-auto">
         <div className="px-5 py-3 border-b border-[#E5E3DF] bg-[#F9F8F7]">
-          <p className="text-[13px] font-semibold text-[#1A2B49]">Fee Records ({fees.length})</p>
+          <p className="text-[13px] font-semibold text-[#1A2B49]">Fee Records ({detailedFees.length})</p>
         </div>
         <table className="data-table">
           <thead>
             <tr>
-              <th>Student</th>
-              <th>Class</th>
-              <th>Term</th>
-              <th className="text-right">Amount</th>
-              <th>Status</th>
+              <th>Student</th><th>Class</th><th>Term</th>
+              <th className="text-right">Amount</th><th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {feeList.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-8 text-[#6B7280]">No fee records yet.</td>
+            {detailedFees.map((f) => (
+              <tr key={f.id}>
+                <td className="font-medium text-[#1A2B49]">{f.student.user.name}</td>
+                <td className="text-[#6B7280]">{f.student.class}</td>
+                <td className="text-[#6B7280] text-[13px]">{f.term}</td>
+                <td className="text-right font-mono text-[13px] text-[#1A2B49]">{fmt(f.amount)}</td>
+                <td><Badge variant={feeVariant(f.status)} size="sm" className="capitalize">{f.status}</Badge></td>
               </tr>
-            ) : (
-              feeList.map((f: any) => (
-                <tr key={f.id}>
-                  <td className="font-medium text-[#1A2B49]">{f.student?.user?.name ?? "—"}</td>
-                  <td className="text-[#6B7280]">{f.student?.class ?? "—"}</td>
-                  <td className="text-[#6B7280] text-[13px]">{f.term ?? "Current Term"}</td>
-                  <td className="text-right font-mono text-[13px] text-[#1A2B49]">{fmt(f.amount)}</td>
-                  <td>
-                    <Badge variant={feeVariant(f.status)} size="sm" className="capitalize">{f.status}</Badge>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
