@@ -1,48 +1,41 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
 import type { Role } from "@/types";
+
+const DEMO_USERS: Record<string, { id: string; name: string; role: Role; avatar?: string }> = {
+  parent:  { id: "demo-parent-1",  name: "Demo Parent",  role: "parent"  },
+  student: { id: "demo-student-1", name: "Demo Student", role: "student" },
+  teacher: { id: "demo-teacher-1", name: "Demo Teacher", role: "teacher" },
+  admin:   { id: "demo-admin-1",   name: "Demo Admin",   role: "admin"   },
+};
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET || "schoolkit-demo-secret-key-2024",
+  secret: process.env.NEXTAUTH_SECRET || "schoolkit-demo-secret-2024",
   pages: {
     signIn: "/login",
-    error: "/login",
+    error:  "/login",
   },
   providers: [
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email:    { label: "Email",    type: "email" },
+        email:    { label: "Email",    type: "email"    },
         password: { label: "Password", type: "password" },
-        role:     { label: "Role",     type: "text" },
+        role:     { label: "Role",     type: "text"     },
       },
       async authorize(credentials) {
-        if (!credentials?.email) return null;
+        if (!credentials?.email || !credentials?.password) return null;
+        if (credentials.password.length < 8) return null;
 
-        const requestedRole = credentials.role as Role | undefined;
-
-        // Try exact email match first
-        let user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        }) as any;
-
-        // Demo bypass: if no exact match, grab the first active user for the selected role
-        if ((!user || !user.active) && requestedRole) {
-          user = await prisma.user.findFirst({
-            where: { role: requestedRole, active: true },
-          }) as any;
-        }
-
-        if (!user) return null;
+        const role = (credentials.role || "student") as string;
+        const demo = DEMO_USERS[role] ?? DEMO_USERS.student;
 
         return {
-          id:     user.id,
-          email:  user.email,
-          name:   user.name,
-          role:   user.role as Role,
-          avatar: user.avatar,
+          id:    demo.id,
+          email: credentials.email,
+          name:  demo.name,
+          role:  demo.role,
         };
       },
     }),

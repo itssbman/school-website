@@ -6,7 +6,10 @@ export async function middleware(req: NextRequest) {
 
   if (!pathname.startsWith("/portal")) return NextResponse.next();
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || "schoolkit-demo-secret-key-2024" });
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET || "schoolkit-demo-secret-2024",
+  });
 
   if (!token) {
     const loginUrl = new URL("/login", req.url);
@@ -14,14 +17,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Role-based guard: /portal/<role>/... must match session role
-  const segments = pathname.split("/").filter(Boolean);
+  const segments  = pathname.split("/").filter(Boolean);
   const portalRole = segments[1]; // parent | student | teacher | admin
 
-  if (portalRole && ["parent", "student", "teacher", "admin"].includes(portalRole)) {
-    if (token.role !== portalRole) {
-      return NextResponse.redirect(new URL(`/portal/${token.role}`, req.url));
-    }
+  if (
+    portalRole &&
+    ["parent", "student", "teacher", "admin"].includes(portalRole) &&
+    token.role !== "admin" &&
+    token.role !== portalRole
+  ) {
+    return NextResponse.redirect(new URL(`/portal/${token.role}`, req.url));
   }
 
   return NextResponse.next();
