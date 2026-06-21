@@ -1,5 +1,7 @@
 import MessagingPanel from "@/components/portal/MessagingPanel";
 
+export const dynamic = "force-dynamic";
+
 export default function TeacherMessagesPage() {
   return (
     <div className="space-y-6">
